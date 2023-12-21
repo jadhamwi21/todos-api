@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"todos-api/config"
 	"todos-api/internal/database"
+	"todos-api/internal/todos"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -27,6 +28,8 @@ func setupServer(db *gorm.DB) {
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("Healthy!")
 	})
+
+	todos.AddTodosRoute(app, db)
 
 	app.Listen(fmt.Sprintf(":%v", viper.Get("PORT")))
 }
