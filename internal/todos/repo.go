@@ -1,6 +1,10 @@
 package todos
 
 import (
+	"errors"
+	"todos-api/internal/app_error"
+
+	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
@@ -28,6 +32,7 @@ func (repo TodosRepository) GetTodos() ([]ApiTodo, error) {
 	res := repo.db.Model(&Todo{}).Find(&todos)
 
 	if res.Error != nil {
+
 		return nil, res.Error
 	}
 
@@ -44,9 +49,12 @@ func (repo TodosRepository) CreateTodo(todo *Todo) error {
 
 func (repo TodosRepository) UpdateTodo(name string, todoUpdate *Todo) error {
 	var todo Todo
-	res := repo.db.Where(&Todo{Name: name}).Find(&todo)
+	res := repo.db.Where(&Todo{Name: name}).First(&todo)
 
 	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return &app_error.ResponseError{Code: fiber.StatusNotFound, Message: "Todo not found"}
+		}
 		return res.Error
 	}
 
@@ -59,9 +67,12 @@ func (repo TodosRepository) UpdateTodo(name string, todoUpdate *Todo) error {
 }
 func (repo TodosRepository) DeleteTodo(name string) error {
 	var todo Todo
-	res := repo.db.Where(&Todo{Name: name}).Find(&todo)
+	res := repo.db.Where(&Todo{Name: name}).First(&todo)
 
 	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return &app_error.ResponseError{Code: fiber.StatusNotFound, Message: "Todo not found"}
+		}
 		return res.Error
 	}
 
