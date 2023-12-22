@@ -15,7 +15,10 @@ import (
 
 func main() {
 	config.SetupConfig()
-	db := database.SetupDatabase()
+	db, err := database.SetupDatabase()
+	if err != nil {
+		panic(err)
+	}
 	setupServer(db)
 }
 

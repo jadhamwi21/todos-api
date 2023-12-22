@@ -8,15 +8,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupDatabase() *gorm.DB {
+func SetupDatabase() (*gorm.DB, error) {
 	dsn := viper.Get("DSN").(string)
 	db, err := gorm.Open(postgres.Open(dsn))
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	db.AutoMigrate(&todos.Todo{})
+	if err = db.AutoMigrate(&todos.Todo{}); err != nil {
+		return nil, err
+	}
 
-	return db
+	return db, nil
 }

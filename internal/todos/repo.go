@@ -18,7 +18,7 @@ func NewTodosRepo(db *gorm.DB) *TodosRepository {
 }
 
 type TodosRepository struct {
-	db *gorm.DB
+	DB *gorm.DB
 }
 
 type ApiTodo struct {
@@ -28,7 +28,7 @@ type ApiTodo struct {
 
 func (repo TodosRepository) GetTodos() ([]ApiTodo, error) {
 	todos := []ApiTodo{}
-	res := repo.db.Model(&Todo{}).Find(&todos)
+	res := repo.DB.Model(&Todo{}).Find(&todos)
 
 	if res.Error != nil {
 
@@ -39,7 +39,7 @@ func (repo TodosRepository) GetTodos() ([]ApiTodo, error) {
 }
 func (repo TodosRepository) CreateTodo(todo *NewTodo) error {
 	todoRecord := &Todo{Name: todo.Name, Description: todo.Description}
-	res := repo.db.Create(todoRecord)
+	res := repo.DB.Create(todoRecord)
 
 	if res.Error != nil {
 		return res.Error
@@ -49,7 +49,7 @@ func (repo TodosRepository) CreateTodo(todo *NewTodo) error {
 
 func (repo TodosRepository) UpdateTodo(name string, todoUpdate *TodoUpdate) error {
 	var todo Todo
-	res := repo.db.Where(&Todo{Name: name}).First(&todo)
+	res := repo.DB.Where(&Todo{Name: name}).First(&todo)
 
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
@@ -60,7 +60,7 @@ func (repo TodosRepository) UpdateTodo(name string, todoUpdate *TodoUpdate) erro
 
 	todoUpdated := &Todo{Name: todoUpdate.Name, Description: todoUpdate.Description}
 
-	res = repo.db.Model(&todo).Updates(todoUpdated)
+	res = repo.DB.Model(&todo).Updates(todoUpdated)
 
 	if res.Error != nil {
 		return res.Error
@@ -70,7 +70,7 @@ func (repo TodosRepository) UpdateTodo(name string, todoUpdate *TodoUpdate) erro
 func (repo TodosRepository) DeleteTodo(name string) (uint, error) {
 	var todo Todo
 	var id uint
-	res := repo.db.Where(&Todo{Name: name}).First(&todo)
+	res := repo.DB.Where(&Todo{Name: name}).First(&todo)
 
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
@@ -80,7 +80,7 @@ func (repo TodosRepository) DeleteTodo(name string) (uint, error) {
 	}
 
 	id = todo.ID
-	res = repo.db.Delete(&todo)
+	res = repo.DB.Delete(&todo)
 
 	if res.Error != nil {
 		return id, res.Error
