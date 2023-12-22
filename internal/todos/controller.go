@@ -2,6 +2,7 @@ package todos
 
 import (
 	"fmt"
+	"todos-api/internal/typing"
 	"todos-api/internal/validation"
 
 	"github.com/go-playground/validator/v10"
@@ -49,11 +50,10 @@ func (controller TodosController) createTodoHandler(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	return ctx.SendString("Todo Created")
+	return ctx.JSON(typing.Map{"code": fiber.StatusOK, "data": todo})
 }
 
 type TodoUpdate struct {
-	PrevName    string `json:"prevName" validate:"required"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
@@ -67,28 +67,26 @@ func (controller TodosController) updateTodoHandler(ctx *fiber.Ctx) error {
 	}
 	name := ctx.Params("name")
 
-	todo.PrevName = name
-
 	if err := validator.New().Struct(todo); err != nil {
 		validationError := err.(validator.ValidationErrors)
 		return &validation.InvalidError{Errors: validationError}
 	}
 
-	err := repo.UpdateTodo(name, todo)
-	if err != nil {
+	if err := repo.UpdateTodo(name, todo); err != nil {
 		return err
 	}
-	return ctx.SendString("Todo Updated")
+
+	return ctx.JSON(typing.Map{"code": fiber.StatusOK, "data": todo})
 }
 func (controller TodosController) deleteTodoHandler(ctx *fiber.Ctx) error {
 	repo := controller.repo
 
 	name := ctx.Params("name")
 
-	print(name)
-	err := repo.DeleteTodo(name)
+	id, err := repo.DeleteTodo(name)
 	if err != nil {
 		return err
 	}
-	return ctx.SendString("Todo Deleted")
+
+	return ctx.JSON(typing.Map{"code": fiber.StatusOK, "message": fmt.Sprintf("deleted todo %v", id)})
 }

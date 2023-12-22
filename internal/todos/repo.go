@@ -14,7 +14,7 @@ type Todo struct {
 }
 
 func NewTodosRepo(db *gorm.DB) *TodosRepository {
-	return &TodosRepository{db: db}
+	return &TodosRepository{db}
 }
 
 type TodosRepository struct {
@@ -67,21 +67,23 @@ func (repo TodosRepository) UpdateTodo(name string, todoUpdate *TodoUpdate) erro
 	}
 	return nil
 }
-func (repo TodosRepository) DeleteTodo(name string) error {
+func (repo TodosRepository) DeleteTodo(name string) (uint, error) {
 	var todo Todo
+	var id uint
 	res := repo.db.Where(&Todo{Name: name}).First(&todo)
 
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return &fiber.Error{Code: fiber.StatusNotFound, Message: "Todo not found"}
+			return id, &fiber.Error{Code: fiber.StatusNotFound, Message: "Todo not found"}
 		}
-		return res.Error
+		return id, res.Error
 	}
 
+	id = todo.ID
 	res = repo.db.Delete(&todo)
 
 	if res.Error != nil {
-		return res.Error
+		return id, res.Error
 	}
-	return nil
+	return todo.ID, nil
 }
