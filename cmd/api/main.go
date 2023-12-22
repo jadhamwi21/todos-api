@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"todos-api/config"
-	"todos-api/internal/app_error"
 	"todos-api/internal/database"
 	"todos-api/internal/todos"
+	"todos-api/internal/validation"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -22,9 +22,12 @@ func main() {
 func setupServer(db *gorm.DB) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-			if responseErr, ok := err.(*app_error.ResponseError); ok {
+			if responseErr, ok := err.(*fiber.Error); ok {
 				ctx.Status(responseErr.Code)
-				return ctx.JSON(responseErr.Response())
+				return ctx.JSON(responseErr)
+			} else if responseErr, ok := err.(*validation.InvalidError); ok {
+				ctx.Status(fiber.StatusBadRequest)
+				return ctx.JSON(responseErr.JSON())
 			} else {
 				ctx.Status(fiber.StatusInternalServerError)
 				return ctx.SendString(err.Error())

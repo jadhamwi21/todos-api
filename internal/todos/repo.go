@@ -2,7 +2,6 @@ package todos
 
 import (
 	"errors"
-	"todos-api/internal/app_error"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -38,8 +37,9 @@ func (repo TodosRepository) GetTodos() ([]ApiTodo, error) {
 
 	return todos, nil
 }
-func (repo TodosRepository) CreateTodo(todo *Todo) error {
-	res := repo.db.Create(todo)
+func (repo TodosRepository) CreateTodo(todo *NewTodo) error {
+	todoRecord := &Todo{Name: todo.Name, Description: todo.Description}
+	res := repo.db.Create(todoRecord)
 
 	if res.Error != nil {
 		return res.Error
@@ -47,18 +47,20 @@ func (repo TodosRepository) CreateTodo(todo *Todo) error {
 	return nil
 }
 
-func (repo TodosRepository) UpdateTodo(name string, todoUpdate *Todo) error {
+func (repo TodosRepository) UpdateTodo(name string, todoUpdate *TodoUpdate) error {
 	var todo Todo
 	res := repo.db.Where(&Todo{Name: name}).First(&todo)
 
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return &app_error.ResponseError{Code: fiber.StatusNotFound, Message: "Todo not found"}
+			return &fiber.Error{Code: fiber.StatusNotFound, Message: "Todo not found"}
 		}
 		return res.Error
 	}
 
-	res = repo.db.Model(&todo).Save(todoUpdate)
+	todoUpdated := &Todo{Name: todoUpdate.Name, Description: todoUpdate.Description}
+
+	res = repo.db.Model(&todo).Updates(todoUpdated)
 
 	if res.Error != nil {
 		return res.Error
@@ -71,7 +73,7 @@ func (repo TodosRepository) DeleteTodo(name string) error {
 
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return &app_error.ResponseError{Code: fiber.StatusNotFound, Message: "Todo not found"}
+			return &fiber.Error{Code: fiber.StatusNotFound, Message: "Todo not found"}
 		}
 		return res.Error
 	}
