@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"todos-api/config"
+	"todos-api/internal/auth"
 	"todos-api/internal/database"
 	"todos-api/internal/todos"
 	"todos-api/internal/validation"
@@ -46,6 +47,7 @@ func setupServer(db *gorm.DB) {
 		return c.SendString("Healthy!")
 	})
 
+	auth.AddAuthRoutes(app, db)
 	todos.AddTodosRoute(app, db)
 
 	app.Listen(fmt.Sprintf(":%v", viper.Get("PORT")))

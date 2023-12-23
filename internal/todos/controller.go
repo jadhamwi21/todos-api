@@ -2,7 +2,6 @@ package todos
 
 import (
 	"fmt"
-	"todos-api/internal/typing"
 	"todos-api/internal/validation"
 
 	"github.com/go-playground/validator/v10"
@@ -19,8 +18,9 @@ func NewTodosController(repo *TodosRepository) TodosController {
 
 func (controller TodosController) getTodosHandler(ctx *fiber.Ctx) error {
 	repo := controller.Repo
+	username := ctx.Locals("username").(string)
 
-	todos, err := repo.GetTodos()
+	todos, err := repo.GetTodos(username)
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,6 @@ type NewTodo struct {
 
 func (controller TodosController) createTodoHandler(ctx *fiber.Ctx) error {
 	repo := controller.Repo
-
 	todo := new(NewTodo)
 	if err := ctx.BodyParser(todo); err != nil {
 		return err
@@ -46,11 +45,12 @@ func (controller TodosController) createTodoHandler(ctx *fiber.Ctx) error {
 		return &validation.InvalidError{Errors: validationError}
 	}
 
-	if err := repo.CreateTodo(todo); err != nil {
+	username := ctx.Locals("username").(string)
+	if err := repo.CreateTodo(todo, username); err != nil {
 		return err
 	}
 
-	return ctx.JSON(typing.Map{"code": fiber.StatusOK, "data": todo})
+	return ctx.JSON(fiber.Map{"code": fiber.StatusOK, "data": todo})
 }
 
 type TodoUpdate struct {
@@ -65,28 +65,30 @@ func (controller TodosController) updateTodoHandler(ctx *fiber.Ctx) error {
 		fmt.Printf("error = %v", err)
 		return err
 	}
-	name := ctx.Params("name")
 
 	if err := validator.New().Struct(todo); err != nil {
 		validationError := err.(validator.ValidationErrors)
 		return &validation.InvalidError{Errors: validationError}
 	}
 
-	if err := repo.UpdateTodo(name, todo); err != nil {
+	name := ctx.Params("name")
+	username := ctx.Locals("username").(string)
+
+	if err := repo.UpdateTodo(username, name, todo); err != nil {
 		return err
 	}
 
-	return ctx.JSON(typing.Map{"code": fiber.StatusOK, "data": todo})
+	return ctx.JSON(fiber.Map{"code": fiber.StatusOK, "data": todo})
 }
 func (controller TodosController) deleteTodoHandler(ctx *fiber.Ctx) error {
 	repo := controller.Repo
 
 	name := ctx.Params("name")
-
-	id, err := repo.DeleteTodo(name)
+	username := ctx.Locals("username").(string)
+	id, err := repo.DeleteTodo(username, name)
 	if err != nil {
 		return err
 	}
 
-	return ctx.JSON(typing.Map{"code": fiber.StatusOK, "message": fmt.Sprintf("deleted todo %v", id)})
+	return ctx.JSON(fiber.Map{"code": fiber.StatusOK, "message": fmt.Sprintf("deleted todo %v", id)})
 }

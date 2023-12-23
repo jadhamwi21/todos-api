@@ -2,15 +2,17 @@ package todos
 
 import (
 	"errors"
+	"todos-api/internal/auth"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
 type Todo struct {
-	gorm.Model
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name         string `json:"name" gorm:"primaryKey"`
+	Description  string `json:"description"`
+	User         auth.User
+	UserUsername string
 }
 
 func NewTodosRepo(db *gorm.DB) *TodosRepository {
@@ -26,9 +28,11 @@ type ApiTodo struct {
 	Description string `json:"description"`
 }
 
-func (repo TodosRepository) GetTodos() ([]ApiTodo, error) {
+func (repo TodosRepository) GetTodos(username string) ([]ApiTodo, error) {
+	user := auth.User{Username: username}
+	repo.DB.First(&user)
 	todos := []ApiTodo{}
-	res := repo.DB.Model(&Todo{}).Find(&todos)
+	res := repo.DB.Model(&Todo{}).Where(&Todo{User: user, UserUsername: username}).Find(&todos)
 
 	if res.Error != nil {
 
@@ -37,9 +41,15 @@ func (repo TodosRepository) GetTodos() ([]ApiTodo, error) {
 
 	return todos, nil
 }
-func (repo TodosRepository) CreateTodo(todo *NewTodo) error {
-	todoRecord := &Todo{Name: todo.Name, Description: todo.Description}
-	res := repo.DB.Create(todoRecord)
+func (repo TodosRepository) CreateTodo(todo *NewTodo, username string) error {
+	user := auth.User{Username: username}
+	repo.DB.First(&user)
+	todoRecord := &Todo{Name: todo.Name, Description: todo.Description, User: user}
+	res := repo.DB.First(todoRecord)
+	if res.Error == nil {
+		return &fiber.Error{Code: fiber.StatusConflict, Message: "todo already exists"}
+	}
+	res = repo.DB.Create(todoRecord)
 
 	if res.Error != nil {
 		return res.Error
@@ -47,9 +57,11 @@ func (repo TodosRepository) CreateTodo(todo *NewTodo) error {
 	return nil
 }
 
-func (repo TodosRepository) UpdateTodo(name string, todoUpdate *TodoUpdate) error {
+func (repo TodosRepository) UpdateTodo(username string, name string, todoUpdate *TodoUpdate) error {
+	user := auth.User{Username: username}
+	repo.DB.First(&user)
 	var todo Todo
-	res := repo.DB.Where(&Todo{Name: name}).First(&todo)
+	res := repo.DB.Where(&Todo{Name: name, User: user, UserUsername: user.Username}).First(&todo)
 
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
@@ -67,23 +79,24 @@ func (repo TodosRepository) UpdateTodo(name string, todoUpdate *TodoUpdate) erro
 	}
 	return nil
 }
-func (repo TodosRepository) DeleteTodo(name string) (uint, error) {
+func (repo TodosRepository) DeleteTodo(username string, name string) (string, error) {
+	user := auth.User{Username: username}
+	repo.DB.First(&user)
 	var todo Todo
-	var id uint
-	res := repo.DB.Where(&Todo{Name: name}).First(&todo)
+
+	res := repo.DB.Where(&Todo{Name: name, User: user, UserUsername: user.Username}).First(&todo)
 
 	if res.Error != nil {
 		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return id, &fiber.Error{Code: fiber.StatusNotFound, Message: "Todo not found"}
+			return "", &fiber.Error{Code: fiber.StatusNotFound, Message: "Todo not found"}
 		}
-		return id, res.Error
+		return "", res.Error
 	}
 
-	id = todo.ID
 	res = repo.DB.Delete(&todo)
 
 	if res.Error != nil {
-		return id, res.Error
+		return "", res.Error
 	}
-	return todo.ID, nil
+	return name, nil
 }
