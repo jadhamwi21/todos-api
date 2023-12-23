@@ -10,7 +10,7 @@ import (
 )
 
 type TodosController struct {
-	repo *TodosRepository
+	Repo *TodosRepository
 }
 
 func NewTodosController(repo *TodosRepository) TodosController {
@@ -18,7 +18,7 @@ func NewTodosController(repo *TodosRepository) TodosController {
 }
 
 func (controller TodosController) getTodosHandler(ctx *fiber.Ctx) error {
-	repo := controller.repo
+	repo := controller.Repo
 
 	todos, err := repo.GetTodos()
 	if err != nil {
@@ -34,7 +34,7 @@ type NewTodo struct {
 }
 
 func (controller TodosController) createTodoHandler(ctx *fiber.Ctx) error {
-	repo := controller.repo
+	repo := controller.Repo
 
 	todo := new(NewTodo)
 	if err := ctx.BodyParser(todo); err != nil {
@@ -59,7 +59,7 @@ type TodoUpdate struct {
 }
 
 func (controller TodosController) updateTodoHandler(ctx *fiber.Ctx) error {
-	repo := controller.repo
+	repo := controller.Repo
 	todo := &TodoUpdate{}
 	if err := ctx.BodyParser(todo); err != nil {
 		fmt.Printf("error = %v", err)
@@ -79,7 +79,7 @@ func (controller TodosController) updateTodoHandler(ctx *fiber.Ctx) error {
 	return ctx.JSON(typing.Map{"code": fiber.StatusOK, "data": todo})
 }
 func (controller TodosController) deleteTodoHandler(ctx *fiber.Ctx) error {
-	repo := controller.repo
+	repo := controller.Repo
 
 	name := ctx.Params("name")
 
