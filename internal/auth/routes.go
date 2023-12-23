@@ -12,4 +12,5 @@ func AddAuthRoutes(app *fiber.App, db *gorm.DB) {
 
 	router.Post("/signup", authController.signupHandler)
 	router.Post("/login", authController.loginHandler)
+	router.Post("/logout", AuthMiddleware, authController.loginHandler)
 }
